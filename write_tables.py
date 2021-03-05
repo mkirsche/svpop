@@ -20,7 +20,8 @@ df['SVTYPE'] = df['SVTYPE'].apply(lambda val: val.replace('/', ''))
 df['END'] = df.apply(lambda row: row['POS'] + (row['SVLEN'] if row['SVTYPE'] != 'INS' else 1), axis=1)
 
 # Set ID and arrange columns
-df['ID2'] = get_variant_id(df)
+df['ID2'] = df['ID']
+df['ID'] = get_variant_id(df)
 
 df = order_variant_columns(df)
 

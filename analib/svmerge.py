@@ -250,7 +250,7 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
 
     df = pd.read_csv(
         bed_list[0], sep='\t', header=0,
-        usecols=lambda col: col in {'#CHROM', 'POS', 'END', 'ID', 'SVTYPE', 'SVLEN', 'REF', 'ALT'}
+        usecols=lambda col: col in {'#CHROM', 'POS', 'END', 'ID', 'ID2', 'SVTYPE', 'SVLEN', 'REF', 'ALT'}
     )
 
     if 'SVLEN' not in df.columns:
@@ -260,15 +260,15 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
         df['SVTYPE'] = 'RGN'
 
     df = df.loc[:,
-         [col for col in ('#CHROM', 'POS', 'END', 'ID', 'SVTYPE', 'SVLEN', 'REF', 'ALT') if col in df.columns]]
+         [col for col in ('#CHROM', 'POS', 'END', 'ID', 'ID2', 'SVTYPE', 'SVLEN', 'REF', 'ALT') if col in df.columns]]
 
     if np.any(df['SVLEN'] < 0):
         raise RuntimeError('Negative SVLEN entries in {}'.format(bed_list[0]))
 
-    df.sort_values(['#CHROM', 'POS', 'SVLEN', 'ID'], inplace=True)
+    df.sort_values(['#CHROM', 'POS', 'SVLEN', 'ID', 'ID2'], inplace=True)
 
     # Check for missing columns
-    missing_cols = [col for col in ('#CHROM', 'POS', 'END', 'ID', 'SVTYPE', 'SVLEN') if col not in df.columns]
+    missing_cols = [col for col in ('#CHROM', 'POS', 'END', 'ID', 'ID2', 'SVTYPE', 'SVLEN') if col not in df.columns]
 
     if missing_cols:
         raise RuntimeError('Missing column(s) for source {}: {}: {}'.format(
@@ -342,7 +342,7 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
 
         df_next = pd.read_csv(
             bed_list[index], sep='\t', header=0,
-            usecols=lambda col: col in {'#CHROM', 'POS', 'END', 'ID', 'SVTYPE', 'SVLEN', 'REF', 'ALT'}
+            usecols=lambda col: col in {'#CHROM', 'POS', 'END', 'ID', 'ID2', 'SVTYPE', 'SVLEN', 'REF', 'ALT'}
         )
 
         if 'SVLEN' not in df_next.columns:
@@ -355,12 +355,12 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
             raise RuntimeError('Negative SVLEN entries in {}'.format(bed_list[index]))
 
         df_next = df_next.loc[:,
-             [col for col in ('#CHROM', 'POS', 'END', 'ID', 'SVTYPE', 'SVLEN', 'REF', 'ALT') if col in df_next.columns]]
+             [col for col in ('#CHROM', 'POS', 'END', 'ID', 'ID2', 'SVTYPE', 'SVLEN', 'REF', 'ALT') if col in df_next.columns]]
 
-        df_next.sort_values(['#CHROM', 'POS', 'SVLEN', 'ID'], inplace=True)
+        df_next.sort_values(['#CHROM', 'POS', 'SVLEN', 'ID', 'ID2'], inplace=True)
 
         # Check for missing columns
-        missing_cols = [col for col in ('#CHROM', 'POS', 'END', 'ID', 'SVTYPE', 'SVLEN') if col not in df_next.columns]
+        missing_cols = [col for col in ('#CHROM', 'POS', 'END', 'ID', 'ID2', 'SVTYPE', 'SVLEN') if col not in df_next.columns]
 
         if missing_cols:
             raise RuntimeError('Missing column(s) for source {}: {}: {}'.format(
@@ -501,6 +501,7 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
 
             if 'ALT' in df_next.columns:
                 df_support['ALT'] = df_next['ALT']
+            df_support['ID2'] = df_next['ID2']
 
             df_support = df_support.loc[:, df.columns]
 
@@ -541,7 +542,7 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
             df = pd.concat([df, df_new.loc[:, df.columns]], axis=0)
 
         # Sort
-        df.sort_values(['#CHROM', 'POS', 'SVLEN', 'ID'], inplace=True)
+        df.sort_values(['#CHROM', 'POS', 'SVLEN', 'ID', 'ID2'], inplace=True)
 
     # Merge support variants into df (where support tables are kept if df is not expanded)
     if len(base_support) > 0:
@@ -570,7 +571,7 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
 
         df.sort_values(
             ['SAMPLE', 'SUPPORT_RO', 'SUPPORT_OFFSET', 'SUPPORT_SZRO', 'SUPPORT_OFFSZ'],
-            ascending=[True, False, True, False, False],
+            ascending=[True, False, True, False, False],	
             inplace=True
         )
 
@@ -593,6 +594,7 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
 
                 ','.join(subdf['SAMPLE']),
                 ','.join(subdf['ID']),
+                ','.join(subdf['ID2']),
 
                 ','.join(['{:.2f}'.format(val) for val in subdf['SUPPORT_RO']]),
                 ','.join(['{:.0f}'.format(val) for val in subdf['SUPPORT_OFFSET']]),
@@ -602,7 +604,7 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
             index=[
                 'MERGE_SRC', 'MERGE_SRC_ID',
                 'MERGE_AC', 'MERGE_AF',
-                'MERGE_SAMPLES', 'MERGE_VARIANTS',
+                'MERGE_SAMPLES', 'MERGE_VARIANTS', 'MERGE_IDLIST',
                 'MERGE_RO', 'MERGE_OFFSET', 'MERGE_SZRO', 'MERGE_OFFSZ'
             ]
         ))
@@ -612,7 +614,7 @@ def merge_variants_nr(bed_list, sample_names, merge_params, subset_chrom=None, t
             [],
             columns=[
                 'MERGE_SRC', 'MERGE_SRC_ID', 'MERGE_AC', 'MERGE_AF',
-                'MERGE_SAMPLES', 'MERGE_VARIANTS',
+                'MERGE_SAMPLES', 'MERGE_VARIANTS', 'MERGE_IDLIST',
                 'MERGE_RO', 'MERGE_OFFSET', 'MERGE_SZRO', 'MERGE_OFFSZ'
             ]
         )
@@ -993,7 +995,7 @@ def merge_sample_by_support(df_support, bed_list, sample_names):
 
     REQUIRED_COLUMNS = ['MERGE_SRC', 'MERGE_SRC_ID']
 
-    OPT_COL = ['MERGE_AC', 'MERGE_AF', 'MERGE_SAMPLES', 'MERGE_VARIANTS', 'MERGE_RO', 'MERGE_OFFSET', 'MERGE_SZRO', 'MERGE_OFFSZ']
+    OPT_COL = ['MERGE_AC', 'MERGE_AF', 'MERGE_SAMPLES', 'MERGE_VARIANTS', 'MERGE_IDLIST', 'MERGE_RO', 'MERGE_OFFSET', 'MERGE_SZRO', 'MERGE_OFFSZ']
 
     OPT_COL_DTYPE = {
         'MERGE_AC': np.int32,
@@ -1059,6 +1061,7 @@ def merge_sample_by_support(df_support, bed_list, sample_names):
         # Transfer required columns
         df_sample['MERGE_SRC'] = df_support_sample['MERGE_SRC']
         df_sample['MERGE_SRC_ID'] = df_support_sample['MERGE_SRC_ID']
+        df_sample['MERGE_IDLIST'] = df_support_sample['MERGE_IDLIST']
 
         # Transfer optional columns annotations
         for col in opt_columns:
@@ -1094,7 +1097,7 @@ def merge_sample_by_support(df_support, bed_list, sample_names):
     df_merge.sort_values(['#CHROM', 'POS'], inplace=True)
 
     # Order columns
-    head_cols = ['#CHROM', 'POS', 'END', 'ID']
+    head_cols = ['#CHROM', 'POS', 'END', 'ID', 'ID2']
 
     if 'SVTYPE' in df_merge.columns:
         head_cols += ['SVTYPE']
